@@ -4,8 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -23,6 +23,7 @@ model User {
   
   accounts Account[]
   sessions Session[]
+  pertek   Pertek[] // Tambahkan relasi ke Pertek
 }
 
 model Account {
@@ -84,4 +85,126 @@ model QueueItem {
   error       String?   // Error message if failed
   
   @@index([status, processAt]) // Index for efficient querying
+}
+
+model Pertek {
+  id                String        @id @default(cuid())
+  pertekNumber      String?       // Nomor PERTEK (diisi setelah disetujui)
+  userId            String        // User ID yang mengajukan PERTEK
+  type              PertekType    // Jenis PERTEK (EMISI/AIR_LIMBAH)
+  status            PertekStatus  @default(SUBMITTED)
+  company           String        // Nama perusahaan/instansi
+  address           String        // Alamat perusahaan
+  notes             String?       // Catatan tambahan dari pemohon
+  adminNotes        String?       // Catatan dari admin (internal)
+  feedbackToUser    String?       // Feedback untuk user (dapat dilihat user)
+  paparanDate       DateTime?     // Tanggal paparan (jika sudah dijadwalkan)
+  paparanLocation   String?       // Lokasi paparan
+  approvedAt        DateTime?     // Tanggal PERTEK disetujui
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  // Relations
+  user              User          @relation(fields: [userId], references: [id]) // Tambahkan relasi ke User
+  documents         PertekDocument[]
+  statusHistory     PertekStatusHistory[]
+  requirementFeedback PertekRequirementFeedback[] // Feedback untuk dokumen persyaratan
+  
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+}
+
+model PertekDocument {
+  id             String             @id @default(cuid())
+  pertekId       String             // PERTEK ID
+  type           PertekDocumentType // Jenis dokumen (PERSYARATAN/REVISI/dll)
+  filename       String             // Nama file asli
+  fileUrl        String             // URL file dari MinIO
+  size           Int                // Ukuran file (bytes)
+  mimeType       String             // MIME type file
+  uploadedAt     DateTime           @default(now())
+  description    String?            // Deskripsi dokumen (opsional)
+  
+  // Relations
+  pertek         Pertek             @relation(fields: [pertekId], references: [id], onDelete: Cascade)
+  feedbacks      PertekRequirementFeedback[] // Feedback untuk dokumen ini
+  
+  @@index([pertekId])
+  @@index([type])
+}
+
+model PertekStatusHistory {
+  id             String        @id @default(cuid())
+  pertekId       String        // PERTEK ID
+  status         PertekStatus  // Status PERTEK
+  notes          String?       // Catatan perubahan status
+  changedById    String?       // User ID yang mengubah status (null jika sistem)
+  createdAt      DateTime      @default(now())
+  
+  // Relations
+  pertek         Pertek        @relation(fields: [pertekId], references: [id], onDelete: Cascade)
+  requirementFeedbacks PertekRequirementFeedback[] // Feedback yang dibuat saat status ini
+  
+  @@index([pertekId])
+}
+
+// Model baru untuk feedback persyaratan
+model PertekRequirementFeedback {
+  id                String        @id @default(cuid())
+  pertekId          String        // PERTEK ID
+  statusHistoryId   String        // Status history yang terkait dengan feedback ini
+  documentId        String?       // Dokumen terkait (bisa null jika feedback umum)
+  requirementType   RequirementFeedbackType // Tipe persyaratan/dokumen
+  feedbackText      String        // Detail feedback/perbaikan yang diperlukan
+  isResolved        Boolean       @default(false) // Apakah sudah diperbaiki/resolved
+  resolvedAt        DateTime?     // Kapan feedback ini diselesaikan
+  createdAt         DateTime      @default(now())
+  
+  // Relations
+  pertek            Pertek        @relation(fields: [pertekId], references: [id], onDelete: Cascade)
+  statusHistory     PertekStatusHistory @relation(fields: [statusHistoryId], references: [id], onDelete: Cascade)
+  document          PertekDocument? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  
+  @@index([pertekId])
+  @@index([statusHistoryId])
+  @@index([documentId])
+}
+
+// Enums yang dibutuhkan oleh model PERTEK
+enum PertekType {
+  EMISI       // Pembuangan emisi
+  AIR_LIMBAH  // Air limbah
+}
+
+// Status berdasarkan flow pada gambar
+enum PertekStatus {
+  SUBMITTED                 // Baru diajukan
+  VERIFICATION              // Proses verifikasi dokumen
+  INCOMPLETE_REQUIREMENTS   // Persyaratan tidak lengkap
+  COMPLETE_REQUIREMENTS     // Persyaratan lengkap
+  SCHEDULED_PAPARAN         // Paparan dijadwalkan
+  PAPARAN_COMPLETED         // Paparan selesai, menunggu revisi
+  REVISION_SUBMITTED        // Revisi telah disubmit
+  REVISION_REVIEW           // Pemeriksaan revisi
+  REVISION_REJECTED         // Revisi ditolak
+  REVISION_APPROVED         // Revisi diterima
+  PERTEK_ISSUED             // PERTEK diterbitkan
+  REJECTED                  // Ditolak secara keseluruhan
+}
+    
+enum PertekDocumentType {
+  PERSYARATAN            // Dokumen persyaratan awal
+  REVISI                 // Dokumen revisi setelah paparan
+  SURAT_UNDANGAN_PAPARAN // Surat undangan paparan
+  PERTEK_FINAL           // Dokumen PERTEK final yang sudah disetujui
+}
+
+// Tipe feedback persyaratan
+enum RequirementFeedbackType {
+  SURAT_PERMOHONAN       // Surat permohonan PERTEK
+  DOKUMEN_AMDAL_UKL_UPL  // Dokumen AMDAL/UKL-UPL
+  DOKUMEN_TEKNIS         // Dokumen Standar/Kajian Teknis
+  DOKUMEN_REVISI         // Dokumen revisi setelah paparan
+  OTHER                  // Lainnya
 }

@@ -23,19 +23,19 @@
         <!-- PERTEK & SLO - Only when logged in -->
         <template v-if="isLoggedIn">
           <NuxtLink 
-            to="/pertek" 
+            :to="userRole === 'administrator' ? '/admin/pertek' : '/pertek'" 
             @click="$emit('close')"
             class="block mx-3 px-4 py-3 text-base font-medium rounded-lg transition-colors"
-            :class="isActive('/pertek') ? 'text-slate-800 bg-slate-100' : 'text-slate-700 hover:bg-white'"
+            :class="isActive('/pertek') || isActive('/admin/pertek') ? 'text-slate-800 bg-slate-100' : 'text-slate-700 hover:bg-white'"
           >
             PERTEK
           </NuxtLink>
           
           <NuxtLink 
-            to="/slo" 
+            :to="userRole === 'administrator' ? '/admin/slo' : '/slo'" 
             @click="$emit('close')"
             class="block mx-3 px-4 py-3 text-base font-medium rounded-lg transition-colors"
-            :class="isActive('/slo') ? 'text-slate-800 bg-slate-100' : 'text-slate-700 hover:bg-white'"
+            :class="isActive('/slo') || isActive('/admin/slo') ? 'text-slate-800 bg-slate-100' : 'text-slate-700 hover:bg-white'"
           >
             SLO
           </NuxtLink>

@@ -131,8 +131,14 @@ const handleLogin = async () => {
     });
     await authClient.getSession()
     
-    // If successful, redirect to profile page
-    router.push('/akun');
+    // Grab redirect from URL directly using URLSearchParams
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirect = urlParams.get('redirect');
+    
+    console.log('Redirecting to:', redirect || '/akun');
+    
+    // Redirect to the specified path or fallback to profile
+    router.push(redirect ? decodeURIComponent(redirect) : '/akun');
   } catch (err) {
     console.error('Login error:', err);
     // Display the specific error message from the server

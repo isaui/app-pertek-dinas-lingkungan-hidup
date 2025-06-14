@@ -6,7 +6,7 @@
         <Logo />
 
         <!-- Center Navigation -->
-        <NavLinks :is-logged-in="isLoggedIn" />
+        <NavLinks :is-logged-in="isLoggedIn" :user-role="userRole" />
 
         <!-- User Menu (Logged In) -->
         <div v-if="isLoggedIn" class="flex items-center">
@@ -48,8 +48,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useProfile } from '~/composables/useProfile'
+import { ref, onServerPrefetch } from 'vue'
+import { useNavbar } from '~/composables/useNavbar'
 import Logo from './Logo.vue'
 import NavLinks from './NavLinks.vue'
 import UserMenu from './UserMenu.vue'
@@ -57,19 +57,11 @@ import AuthButtons from './AuthButtons.vue'
 import MobileMenuButton from './MobileMenuButton.vue'
 import MobileMenu from './MobileMenu.vue'
 
-const { user, logout, fetchUserData } = useProfile()
+// Use our SSR-friendly navbar composable
+const { user, isLoggedIn, userRole, logout, fetchUserData } = useNavbar()
 
 // Menu state
 const showMobileMenu = ref(false)
-
-// Check if user is logged in
-const isLoggedIn = computed(() => !!user.value)
-
-// Get user role
-const userRole = computed(() => {
-  // Get the user's role from the user object or default to 'visitor'
-  return user.value?.role || 'Undefined'
-})
 
 const toggleMobileMenu = () => {
   showMobileMenu.value = !showMobileMenu.value
@@ -88,8 +80,13 @@ const handleLogout = async () => {
   await logout()
 }
 
-onMounted(() => {
-  // Fetch user data when component mounts
-  fetchUserData()
+// Prefetch user data on the server to prevent auth flash
+onServerPrefetch(async () => {
+  await fetchUserData()
 })
+
+// Also fetch on client-side in case server fetch fails
+if (import.meta.client) {
+  fetchUserData()
+}
 </script>

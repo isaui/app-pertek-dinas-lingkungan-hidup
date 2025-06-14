@@ -14,20 +14,20 @@
       <!-- PERTEK & SLO - Only when logged in -->
       <template v-if="isLoggedIn">
         <NuxtLink 
-          to="/pertek" 
+          :to="userRole === 'administrator' ? '/admin/pertek' : '/pertek'" 
           class="relative px-3 py-2 text-base font-medium transition-colors duration-200"
-          :class="isActive('/pertek') ? 'text-slate-800' : 'text-slate-700 hover:text-slate-800'"
+          :class="isActive('/pertek') || isActive('/admin/pertek') ? 'text-slate-800' : 'text-slate-700 hover:text-slate-800'"
         >
           PERTEK
-          <div v-if="isActive('/pertek')" class="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-800"></div>
+          <div v-if="isActive('/pertek') || isActive('/admin/pertek')" class="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-800"></div>
         </NuxtLink>
         <NuxtLink 
-          to="/slo" 
+          :to="userRole === 'administrator' ? '/admin/slo' : '/slo'" 
           class="relative px-3 py-2 text-base font-medium transition-colors duration-200"
-          :class="isActive('/slo') ? 'text-slate-800' : 'text-slate-700 hover:text-slate-800'"
+          :class="isActive('/slo') || isActive('/admin/slo') ? 'text-slate-800' : 'text-slate-700 hover:text-slate-800'"
         >
           SLO
-          <div v-if="isActive('/slo')" class="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-800"></div>
+          <div v-if="isActive('/slo') || isActive('/admin/slo')" class="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-800"></div>
         </NuxtLink>
       </template>
       
@@ -51,6 +51,10 @@ defineProps({
   isLoggedIn: {
     type: Boolean,
     default: false
+  },
+  userRole: {
+    type: String,
+    default: 'visitor'
   }
 })
 

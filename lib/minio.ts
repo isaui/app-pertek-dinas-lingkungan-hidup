@@ -178,18 +178,46 @@ export async function uploadPart(
   buffer: Buffer
 ): Promise<string> {
   try {
-    const etag = await minioClient.putObject(
+    // Menggunakan metode putObject dengan query parameter seperti yang dilakukan minIO client internal
+    // Gunakan pendekatan low-level yang lebih mirip dengan implementasi internal upload part
+    const reqOpts = {
       bucketName,
       objectName,
-      buffer,
-      buffer.length,
-      {
-        'X-Amz-Part-Number': partNumber.toString(),
-        'X-Amz-Upload-Id': uploadId
-      }
-    );
-    // MinIO client might return UploadedObjectInfo, extract etag or convert to string
-    return typeof etag === 'string' ? etag : etag.etag || String(etag);
+      headers: {
+        'Content-Type': 'application/octet-stream'
+      },
+      query: `uploadId=${uploadId}&partNumber=${partNumber}` // Gunakan query parameter, bukan header
+    };
+
+    console.log(`Using query parameters for part ${partNumber}: ${reqOpts.query}`);
+    
+    // Gunakan client low-level API
+    const response = await minioClient.makeRequestAsync({
+      method: 'PUT',
+      ...reqOpts
+    }, buffer);
+    
+    // Ambil ETag dari response headers (dengan pemeriksaan null/undefined)
+    if (!response.headers) {
+      console.error('No headers in response!');
+      throw new Error('No headers in upload part response');
+    }
+    
+    const etag = response.headers.etag;
+    console.log(`Part ${partNumber} response headers:`, etag);
+    
+    
+    if (!etag) {
+      console.error('No ETag in upload part response!');
+      throw new Error('No ETag in upload part response');
+    }
+    
+    // Sanitize ETag (hapus quotes jika ada)
+    const sanitizedETag = etag.replace(/^"/, '').replace(/"$/, '');
+    console.log(`Part ${partNumber} uploaded with etag: ${sanitizedETag}`);
+    
+    // Return etag yang akan digunakan untuk complete
+    return sanitizedETag;
   } catch (error) {
     console.error(`Error uploading part ${partNumber}:`, error);
     throw error;
@@ -211,6 +239,10 @@ export async function completeMultipartUpload(
   try {
     // Sort parts by part number (required by S3 API)
     const sortedParts = [...parts].sort((a, b) => a.part - b.part);
+    
+    // MinIO client mengharapkan array dengan format {part, etag}
+    // Format yang kita terima sudah benar, hanya perlu memastikan konsistensi
+    console.log('Parts untuk complete upload:', sortedParts);
     
     await minioClient.completeMultipartUpload(
       bucketName,

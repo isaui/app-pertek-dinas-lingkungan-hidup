@@ -153,9 +153,6 @@ useHead({
   ]
 })
 
-definePageMeta({
-  middleware: 'auth'
-})
 
 const {
   user,

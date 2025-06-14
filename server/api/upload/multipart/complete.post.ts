@@ -29,6 +29,7 @@ export default defineEventHandler(async (event) => {
     
     // Get request body
     const body = await readBody(event)
+    console.log('Complete request body:', JSON.stringify(body, null, 2))
     
     // Validate required fields
     if (!body.uploadId || !body.objectName || !Array.isArray(body.parts) || body.parts.length === 0) {
@@ -41,8 +42,15 @@ export default defineEventHandler(async (event) => {
     // Define type for part object
     type PartInfo = { etag: string; part: number }
     
+    // Log the parts data received
+    console.log('Parts received:', JSON.stringify(body.parts, null, 2))
+    
+    // Sort parts by part number (required by S3 API)
+    const sortedParts = [...body.parts].sort((a, b) => a.part - b.part);
+    console.log('Sorted parts:', JSON.stringify(sortedParts, null, 2));
+    
     // Validate parts format
-    const validParts = body.parts.every((part: unknown) => 
+    const validParts = sortedParts.every((part: unknown) => 
       typeof part === 'object' && 
       part !== null && 
       'etag' in part && 
@@ -58,11 +66,13 @@ export default defineEventHandler(async (event) => {
       })
     }
     
-    // Complete the multipart upload
+    console.log('Using sorted parts for completion:', JSON.stringify(sortedParts, null, 2));
+    
+    // Complete the multipart upload - menggunakan format {etag, part} sesuai definisi fungsi
     const fileUrl = await completeMultipartUpload(
       body.uploadId,
       body.objectName,
-      body.parts
+      sortedParts
     )
     
     // Return the completed file URL
