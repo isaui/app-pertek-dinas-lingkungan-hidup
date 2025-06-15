@@ -191,3 +191,90 @@ export const sendPasswordResetEmail = async (
     text
   });
 };
+
+/**
+ * Send status update notification email to user
+ * @param {string} to - Recipient email
+ * @param {string} name - Recipient name
+ * @param {string} companyName - Company name
+ * @param {string} pertekNumber - PERTEK number or ID
+ * @param {string} newStatus - New status of the PERTEK
+ * @param {string} statusLabel - Readable status label in Indonesian
+ * @param {string} notes - Optional feedback notes from admin
+ * @returns {Promise<any>} Send result
+ */
+export const sendStatusUpdateNotification = async (
+  to: string,
+  name: string,
+  companyName: string,
+  pertekNumber: string,
+  newStatus: string,
+  statusLabel: string,
+  notes?: string
+): Promise<any> => {
+  const subject = `Status PERTEK ${pertekNumber} Telah Diperbarui`;
+  
+  // Generate button color based on status
+  let buttonColor = '#1e293b'; // Default dark color
+  if (newStatus === 'PERTEK_ISSUED' || newStatus === 'REVISION_APPROVED' || newStatus === 'COMPLETE_REQUIREMENTS') {
+    buttonColor = '#15803d'; // Green for positive status
+  } else if (newStatus === 'REJECTED' || newStatus === 'REVISION_REJECTED' || newStatus === 'INCOMPLETE_REQUIREMENTS') {
+    buttonColor = '#b91c1c'; // Red for negative status
+  } else if (newStatus === 'VERIFICATION' || newStatus === 'SCHEDULED_PAPARAN') {
+    buttonColor = '#1d4ed8'; // Blue for neutral/processing status
+  }
+  
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const pertekDetailUrl = `${frontendUrl}/pertek/${pertekNumber}`;
+  
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #1e293b;">Status PERTEK Diperbarui</h2>
+      <p>Halo ${name},</p>
+      <p>Status PERTEK untuk <strong>${companyName}</strong> telah diperbarui.</p>
+      
+      <div style="background-color: #f1f5f9; border-left: 4px solid ${buttonColor}; padding: 16px; margin: 20px 0;">
+        <p style="margin: 0; font-size: 14px;">Status baru:</p>
+        <p style="margin: 8px 0 0; font-weight: bold; font-size: 18px; color: #0f172a;">${statusLabel}</p>
+      </div>
+      
+      ${notes ? `
+      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 16px; margin: 20px 0;">
+        <p style="margin: 0 0 8px; font-size: 14px; font-weight: bold;">Catatan:</p>
+        <p style="margin: 0; font-size: 14px;">${notes}</p>
+      </div>
+      ` : ''}
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${pertekDetailUrl}" style="background-color: ${buttonColor}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">Lihat Detail PERTEK</a>
+      </div>
+      
+      <p>Silakan login ke akun Anda untuk melihat detail perubahan status dan tindakan yang diperlukan selanjutnya.</p>
+      <p style="margin-top: 30px; font-size: 12px; color: #64748b;">Email ini dikirim secara otomatis, mohon tidak membalas email ini.</p>
+    </div>
+  `;
+  
+  const text = `
+    Status PERTEK Diperbarui
+    
+    Halo ${name},
+    
+    Status PERTEK untuk ${companyName} telah diperbarui.
+    
+    Status baru: ${statusLabel}
+    ${notes ? `
+    Catatan: ${notes}
+    ` : ''}
+    
+    Silakan login ke akun Anda untuk melihat detail perubahan status dan tindakan yang diperlukan selanjutnya.
+    
+    ${pertekDetailUrl}
+  `;
+  
+  return sendEmail({
+    to,
+    subject,
+    html,
+    text
+  });
+};

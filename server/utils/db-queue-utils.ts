@@ -285,8 +285,8 @@ class DbQueue {
 
 // Initialize email queue with processors
 export const dbEmailQueue = new DbQueue({
-  rateLimit: 2,    // Process 5 emails per interval
-  intervalMs: 1500 // Every 2 seconds
+  rateLimit: 2,    // Process 2 emails per interval
+  intervalMs: 1500 // Every 1.5 seconds
 })
   .registerProcessor<{to: string; name: string; verificationLink: string}>('verification-email', async (data) => {
     const { to, name, verificationLink } = data;
@@ -299,6 +299,20 @@ export const dbEmailQueue = new DbQueue({
     // Import here to avoid circular dependency
     const { sendPasswordResetEmail } = await import('./email-utils');
     await sendPasswordResetEmail(to, name, resetLink);
+  })
+  .registerProcessor<{
+    to: string; 
+    name: string;
+    companyName: string;
+    pertekNumber: string;
+    newStatus: string;
+    statusLabel: string;
+    notes?: string;
+  }>('status-update-notification', async (data) => {
+    const { to, name, companyName, pertekNumber, newStatus, statusLabel, notes } = data;
+    // Import here to avoid circular dependency
+    const { sendStatusUpdateNotification } = await import('./email-utils');
+    await sendStatusUpdateNotification(to, name, companyName, pertekNumber, newStatus, statusLabel, notes);
   });
 
 // Export the queue class

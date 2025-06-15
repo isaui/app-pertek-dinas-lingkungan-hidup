@@ -1,6 +1,7 @@
 // server/api/pertek/admin/[id]/index.get.ts
 import { auth } from "~/lib/auth"
 import prisma from "~/lib/prisma"
+import { PertekStatus } from "@prisma/client"
 
 export default defineEventHandler(async (event) => {
   try {
@@ -114,10 +115,10 @@ export default defineEventHandler(async (event) => {
       data: {
         ...pertek,
         documentsByType,
-        feedbackByStatus,
-        canTransition: getAvailableTransitions(pertek.status),
-        nextActions: getNextActions(pertek.status, pertek.documents, pertek.requirementFeedback)
-      }
+        feedbackByStatus
+      },
+      availableTransitions: getAvailableTransitions(pertek.status),
+      nextActions: getNextActions(pertek.status, pertek.documents, pertek.requirementFeedback)
     }
     
   } catch (error: any) {
@@ -135,59 +136,95 @@ export default defineEventHandler(async (event) => {
 })
 
 // Helper: Get available status transitions
-function getAvailableTransitions(currentStatus: string) {
-  const transitions: Record<string, string[]> = {
-    'SUBMITTED': ['VERIFICATION', 'INCOMPLETE_REQUIREMENTS', 'COMPLETE_REQUIREMENTS'],
-    'VERIFICATION': ['INCOMPLETE_REQUIREMENTS', 'COMPLETE_REQUIREMENTS'],
-    'INCOMPLETE_REQUIREMENTS': ['VERIFICATION', 'COMPLETE_REQUIREMENTS'],
-    'COMPLETE_REQUIREMENTS': ['SCHEDULED_PAPARAN'],
-    'SCHEDULED_PAPARAN': ['PAPARAN_COMPLETED'],
-    'PAPARAN_COMPLETED': ['REVISION_SUBMITTED'],
-    'REVISION_SUBMITTED': ['REVISION_REVIEW'],
-    'REVISION_REVIEW': ['REVISION_APPROVED', 'REVISION_REJECTED'],
-    'REVISION_REJECTED': ['REVISION_SUBMITTED'],
-    'REVISION_APPROVED': ['PERTEK_ISSUED']
+function getAvailableTransitions(currentStatus: string): PertekStatus[] {
+  const transitions: Record<string, PertekStatus[]> = {
+    'SUBMITTED': [PertekStatus.VERIFICATION, PertekStatus.INCOMPLETE_REQUIREMENTS, PertekStatus.COMPLETE_REQUIREMENTS, PertekStatus.REJECTED],
+    'VERIFICATION': [PertekStatus.INCOMPLETE_REQUIREMENTS, PertekStatus.COMPLETE_REQUIREMENTS, PertekStatus.REJECTED],
+    'INCOMPLETE_REQUIREMENTS': [PertekStatus.VERIFICATION, PertekStatus.COMPLETE_REQUIREMENTS, PertekStatus.REJECTED],
+    'COMPLETE_REQUIREMENTS': [PertekStatus.SCHEDULED_PAPARAN, PertekStatus.INCOMPLETE_REQUIREMENTS],
+    'SCHEDULED_PAPARAN': [PertekStatus.PAPARAN_COMPLETED, PertekStatus.COMPLETE_REQUIREMENTS],
+    'PAPARAN_COMPLETED': [PertekStatus.REVISION_SUBMITTED],
+    'REVISION_SUBMITTED': [PertekStatus.REVISION_REVIEW],
+    'REVISION_REVIEW': [PertekStatus.REVISION_APPROVED, PertekStatus.REVISION_REJECTED],
+    'REVISION_REJECTED': [PertekStatus.REVISION_SUBMITTED],
+    'REVISION_APPROVED': [PertekStatus.PERTEK_ISSUED]
   }
   
   return transitions[currentStatus] || []
 }
 
 // Helper: Get suggested next actions
-function getNextActions(status: string, documents: any[], feedback: any[]) {
-  const actions = []
+function getNextActions(status: string, documents: any[], feedback: any[]): string[] {
+  const actions: string[] = []
   
   switch (status) {
     case 'SUBMITTED':
-      actions.push('verify_requirements')
+      actions.push('Mulai verifikasi dokumen persyaratan')
+      actions.push('Periksa kelengkapan dokumen yang diupload')
       break
+      
     case 'VERIFICATION':
-      actions.push('approve_requirements', 'request_corrections')
+      actions.push('Tentukan apakah persyaratan sudah lengkap')
+      actions.push('Berikan feedback jika ada dokumen yang kurang/salah')
       break
+      
     case 'INCOMPLETE_REQUIREMENTS':
       const hasActiveFeedback = feedback.some(f => !f.isResolved)
-      if (!hasActiveFeedback) {
-        actions.push('recheck_requirements')
+      if (hasActiveFeedback) {
+        actions.push('Tunggu user memperbaiki feedback yang diberikan')
+      } else {
+        actions.push('Periksa kembali kelengkapan persyaratan')
       }
       break
+      
     case 'COMPLETE_REQUIREMENTS':
-      actions.push('schedule_paparan')
+      actions.push('Jadwalkan sesi paparan dengan pemohon')
+      actions.push('Tentukan tanggal dan lokasi paparan')
+      actions.push('Siapkan surat undangan paparan')
       break
+      
     case 'SCHEDULED_PAPARAN':
-      actions.push('complete_paparan')
+      actions.push('Laksanakan sesi paparan sesuai jadwal')
+      actions.push('Update status setelah paparan selesai')
       break
+      
     case 'PAPARAN_COMPLETED':
-      actions.push('request_revision')
+      actions.push('Tunggu user mengupload dokumen revisi')
+      actions.push('Berikan arahan revisi yang diperlukan')
       break
+      
+    case 'REVISION_SUBMITTED':
+      actions.push('Mulai review dokumen revisi yang disubmit')
+      break
+      
     case 'REVISION_REVIEW':
-      actions.push('approve_revision', 'reject_revision')
+      actions.push('Tentukan apakah revisi sudah sesuai')
+      actions.push('Approve atau reject dokumen revisi')
       break
+      
+    case 'REVISION_REJECTED':
+      actions.push('Berikan feedback detail untuk perbaikan')
+      actions.push('Tunggu user submit ulang revisi')
+      break
+      
     case 'REVISION_APPROVED':
+      actions.push('Revisi sudah disetujui.')
+      actions.push('Silahkan update status ke PERTEK Diterbitkan apabila dokumen PERTEK sudah siap.')
+      break
+      
+    case 'PERTEK_ISSUED':
       const hasFinalDocument = documents.some(d => d.type === 'PERTEK_FINAL')
       if (hasFinalDocument) {
-        actions.push('issue_pertek')
+        actions.push('PERTEK resmi sudah diterbitkan')
       } else {
-        actions.push('upload_final_document')
+        actions.push('Upload dokumen PERTEK final')
+        actions.push('Siapkan dokumen PERTEK untuk penerbitan')
       }
+      break
+      
+    case 'REJECTED':
+      actions.push('Permohonan ditolak')
+      actions.push('Berikan penjelasan alasan penolakan')
       break
   }
   

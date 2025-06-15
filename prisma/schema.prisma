@@ -124,6 +124,7 @@ model PertekDocument {
   size           Int                // Ukuran file (bytes)
   mimeType       String             // MIME type file
   uploadedAt     DateTime           @default(now())
+  updatedAt      DateTime           @default(now())
   description    String?            // Deskripsi dokumen (opsional)
   
   // Relations
