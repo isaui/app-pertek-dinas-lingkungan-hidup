@@ -243,7 +243,7 @@ const handleViewChange = (view) => {
 
 // View PERTEK detail
 const viewPertekDetail = (id) => {
-  router.push(`/pertek/detail/${id}`);
+  router.push(`/pertek/${id}`);
 };
 
 // Handle new PERTEK button

@@ -119,6 +119,7 @@ model PertekDocument {
   id             String             @id @default(cuid())
   pertekId       String             // PERTEK ID
   type           PertekDocumentType // Jenis dokumen (PERSYARATAN/REVISI/dll)
+  expired        Boolean            @default(false)
   filename       String             // Nama file asli
   fileUrl        String             // URL file dari MinIO
   size           Int                // Ukuran file (bytes)

@@ -8,7 +8,7 @@
       <Meta property="og:title" content="Detail PERTEK Admin | DLH" />
       <Meta property="og:description" content="Halaman administrasi PERTEK DLH." />
     </Head>
-    
+    <Navbar/>
     <div class="min-h-screen bg-gray-50">
       <div class="py-6 px-4 sm:px-6 lg:px-8">
         <!-- Loading state -->
@@ -53,7 +53,7 @@
               <div class="sm:flex sm:items-center sm:justify-between">
                 <div class="flex-1 min-w-0">
                   <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate mb-2">
-                    Detail Permohonan Persetujuan Teknis
+                    Detail Permohonan PERTEK
                   </h1>
                   <div class="mt-1 flex flex-col sm:flex-row sm:flex-wrap sm:mt-0 sm:space-x-4">
                     <div class="flex items-center text-sm text-gray-600">
@@ -167,6 +167,7 @@ import { useRouter } from 'vue-router'
 
 // Import new components
 import InformasiUmum from '~/components/admin/pertek/InformasiUmum.vue'
+import Navbar from '~/components/navbar/index.vue'
 import UpdateStatus from '~/components/admin/pertek/UpdateStatus.vue'
 import HistoryTimeline from '~/components/admin/pertek/HistoryTimeline.vue'
 import DocumentsTab from '~/components/admin/pertek/DocumentsTab.vue'

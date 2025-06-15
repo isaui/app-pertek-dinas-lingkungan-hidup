@@ -6,6 +6,21 @@
       <p class="mt-1 text-sm text-gray-500">
         Dokumen yang tersedia dalam pengajuan PERTEK
       </p>
+      
+      <!-- Expired documents warning -->
+      <div v-if="totalExpiredCount > 0" class="mt-3 bg-red-50 border border-red-200 rounded-lg p-3">
+        <div class="flex items-center">
+          <svg class="h-4 w-4 text-red-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span class="text-sm font-medium text-red-800">
+            {{ totalExpiredCount }} dokumen sudah kedaluwarsa
+          </span>
+        </div>
+        <p class="text-xs text-red-600 mt-1 ml-6">
+          Dokumen yang kedaluwarsa perlu diperbarui atau dihapus dari sistem
+        </p>
+      </div>
     </div>
     
     <!-- Empty State -->
@@ -133,21 +148,61 @@
         
         <div class="p-6">
           <div class="space-y-4">
-            <div v-for="doc in group" :key="doc.id" class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div v-for="doc in group" :key="doc.id" :class="[
+              'flex items-center justify-between p-4 rounded-lg transition-colors',
+              doc.expired 
+                ? 'bg-red-50 border border-red-200 hover:bg-red-100' 
+                : 'bg-gray-50 hover:bg-gray-100'
+            ]">
               <!-- Document info -->
               <div class="flex items-center space-x-4">
                 <!-- Document icon -->
-                <div class="bg-green-100 p-2 rounded-lg text-green-600">
+                <div :class="[
+                  'p-2 rounded-lg relative',
+                  doc.expired 
+                    ? 'bg-red-100 text-red-600' 
+                    : 'bg-green-100 text-green-600'
+                ]">
                   <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
+                  <!-- Expired overlay icon -->
+                  <div v-if="doc.expired" class="absolute -top-1 -right-1 bg-red-500 rounded-full p-0.5">
+                    <svg class="h-2 w-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </div>
                 </div>
                 
                 <!-- Document details -->
-                <div>
-                  <div class="text-sm font-medium text-gray-900">{{ doc.filename.replace(/\s*\(auto-uploaded\)/gi, '') }}</div>
-                  <div class="text-xs text-gray-500">
+                <div class="flex-1">
+                  <div class="flex items-center space-x-2">
+                    <span :class="[
+                      'text-sm font-medium',
+                      doc.expired ? 'text-red-900' : 'text-gray-900'
+                    ]">
+                      {{ doc.filename.replace(/\s*\(auto-uploaded\)/gi, '') }}
+                    </span>
+                    <!-- Expired badge -->
+                    <span v-if="doc.expired" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                      <svg class="w-3 h-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Kedaluwarsa
+                    </span>
+                  </div>
+                  <div :class="[
+                    'text-xs mt-1',
+                    doc.expired ? 'text-red-600' : 'text-gray-500'
+                  ]">
                     {{ formatFileSize(doc.size || 0) }}
+                  </div>
+                  <!-- Expired warning message -->
+                  <div v-if="doc.expired" class="text-xs text-red-600 mt-1 flex items-center">
+                    <svg class="w-3 h-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    {{ getExpiredMessage(doc.type) }}
                   </div>
                 </div>
               </div>
@@ -158,7 +213,12 @@
                 <template v-if="['PERTEK_FINAL', 'SURAT_UNDANGAN_PAPARAN'].includes(doc.type)">
                   <button 
                     @click="openEditDialog(doc)" 
-                    class="bg-gray-500 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 flex items-center"
+                    :class="[
+                      'text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center',
+                      doc.expired 
+                        ? 'bg-red-500 hover:bg-red-600 focus:ring-red-500'
+                        : 'bg-gray-500 hover:bg-gray-700 focus:ring-gray-500'
+                    ]"
                   >
                     <svg class="mr-1 h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -180,16 +240,62 @@
                 <!-- Download button -->
                 <button 
                   @click="downloadDocument(doc)" 
-                  class="bg-green-500 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center"
+                  :class="[
+                    'px-3 py-1.5 rounded-lg text-xs font-medium flex items-center transition-colors focus:outline-none focus:ring-2',
+                    doc.expired 
+                      ? 'bg-red-500 text-white hover:bg-red-600 focus:ring-red-500' 
+                      : 'bg-green-500 text-white hover:bg-green-700 focus:ring-green-500'
+                  ]"
+                  :title="doc.expired ? 'Download dokumen kedaluwarsa' : 'Download dokumen'"
                 >
                   <svg class="mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
                   Download
+                  <svg v-if="doc.expired" class="ml-1 h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
                 </button>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Document Statistics -->
+    <div v-if="documents && documents.length > 0" class="bg-white border border-gray-200 rounded-lg p-6">
+      <h4 class="text-md font-medium text-gray-900 mb-4 flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+        Ringkasan Dokumen
+      </h4>
+      
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div v-for="stat in documentStats" :key="stat.type" class="text-center p-4 bg-gray-50 rounded-lg">
+          <div :class="['text-2xl font-bold', stat.color]">
+            {{ stat.count }}
+          </div>
+          <div class="text-xs text-gray-600 mt-1">{{ stat.label }}</div>
+          <div v-if="stat.expired > 0" class="text-xs text-red-600 mt-1 font-medium">
+            {{ stat.expired }} kedaluwarsa
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-4 pt-4 border-t border-gray-200">
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-gray-600">Total dokumen:</span>
+          <span class="font-medium text-gray-900">{{ documents.length }} file</span>
+        </div>
+        <div class="flex items-center justify-between text-sm mt-1">
+          <span class="text-gray-600">Total ukuran:</span>
+          <span class="font-medium text-gray-900">{{ totalFileSize }}</span>
+        </div>
+        <div v-if="totalExpiredCount > 0" class="flex items-center justify-between text-sm mt-1">
+          <span class="text-gray-600">Dokumen kedaluwarsa:</span>
+          <span class="font-medium text-red-600">{{ totalExpiredCount }} file</span>
         </div>
       </div>
     </div>
@@ -212,6 +318,7 @@ const props = defineProps({
       size?: number
       description?: string
       createdAt: string
+      expired?: boolean
     }>,
     default: () => []
   },
@@ -256,6 +363,38 @@ const groupedDocuments = computed(() => {
   
   return groups
 })
+
+// Document statistics
+const documentStats = computed(() => {
+  const stats = [
+    { type: 'PERSYARATAN', label: 'Persyaratan', count: 0, expired: 0, color: 'text-blue-600' },
+    { type: 'REVISI', label: 'Revisi', count: 0, expired: 0, color: 'text-green-600' },
+    { type: 'SURAT_UNDANGAN_PAPARAN', label: 'Surat Undangan', count: 0, expired: 0, color: 'text-purple-600' },
+    { type: 'PERTEK_FINAL', label: 'PERTEK Final', count: 0, expired: 0, color: 'text-emerald-600' }
+  ];
+  
+  props.documents.forEach(doc => {
+    const stat = stats.find(s => s.type === doc.type);
+    if (stat) {
+      stat.count++;
+      if (doc.expired) {
+        stat.expired++;
+      }
+    }
+  });
+  
+  return stats;
+});
+
+// Total file size and expired count
+const totalFileSize = computed(() => {
+  const totalBytes = props.documents.reduce((total, doc) => total + (doc.size || 0), 0);
+  return formatFileSize(totalBytes);
+});
+
+const totalExpiredCount = computed(() => {
+  return props.documents.filter(doc => doc.expired).length;
+});
 
 // Edit document functions
 const openEditDialog = (doc: any) => {
@@ -395,6 +534,17 @@ const downloadDocument = (document: any) => {
 }
 
 // Helper functions
+const getExpiredMessage = (type: string) => {
+  const messages: Record<string, string> = {
+    'PERSYARATAN': 'Dokumen persyaratan tidak berlaku lagi',
+    'REVISI': 'Dokumen revisi sudah kedaluwarsa',
+    'SURAT_UNDANGAN_PAPARAN': 'Surat undangan sudah lewat masa berlaku',
+    'PERTEK_FINAL': 'PERTEK sudah tidak berlaku lagi'
+  };
+  
+  return messages[type] || 'Dokumen sudah kedaluwarsa';
+};
+
 const formatDate = (dateString: string | Date | null | undefined) => {
   if (!dateString) return ''
   

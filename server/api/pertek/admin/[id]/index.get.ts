@@ -81,7 +81,8 @@ export default defineEventHandler(async (event) => {
               select: {
                 id: true,
                 filename: true,
-                type: true
+                type: true,
+                expired: true
               }
             }
           }
