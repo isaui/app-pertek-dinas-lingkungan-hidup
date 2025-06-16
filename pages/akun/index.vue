@@ -31,91 +31,39 @@
 
       <!-- Main Content -->
       <div v-else-if="user" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Tab Navigation -->
-        <div class="mb-8">
-          <nav class="flex border-b border-slate-200 overflow-x-auto pb-px scrollbar-hide">
-            <button 
-              @click="activeTab = 'profil'"
-              class="pb-3 px-4 font-medium text-sm whitespace-nowrap"
-              :class="activeTab === 'profil' 
-                ? 'border-b-2 border-slate-800 text-slate-800' 
-                : 'border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
-            >
-              PROFIL
-            </button>
-            <button 
-              @click="activeTab = 'status-pertek'"
-              class="pb-3 px-4 font-medium text-sm whitespace-nowrap"
-              :class="activeTab === 'status-pertek' 
-                ? 'border-b-2 border-slate-800 text-slate-800' 
-                : 'border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
-            >
-              STATUS DOKUMEN PERTEK
-            </button>
-            <button 
-              @click="activeTab = 'status-slo'"
-              class="pb-3 px-4 font-medium text-sm whitespace-nowrap"
-              :class="activeTab === 'status-slo' 
-                ? 'border-b-2 border-slate-800 text-slate-800' 
-                : 'border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
-            >
-              STATUS DOKUMEN SLO
-            </button>
-          </nav>
-        </div>
+        <!-- Status Messages -->
+        <StatusMessage
+          type="success"
+          :show="updateSuccess"
+          message="Profil berhasil diperbarui!"
+        />
         
-        <!-- Profil Tab Content -->
-        <div v-if="activeTab === 'profil'" class="space-y-6">
-          <!-- Status Messages -->
-          <StatusMessage
-            type="success"
-            :show="updateSuccess"
-            message="Profil berhasil diperbarui!"
-          />
-          
-          <StatusMessage
-            type="error"
-            :show="!!updateError"
-            :message="updateError"
-          />
+        <StatusMessage
+          type="error"
+          :show="!!updateError"
+          :message="updateError"
+        />
 
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Profile Form -->
-            <div class="lg:col-span-2">
-              <ProfileForm 
-                :user="user" 
-                :loading="updateLoading" 
-                @submit="handleUpdateProfile"
-              />
-            </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Profile Form -->
+          <div class="lg:col-span-2">
+            <ProfileForm 
+              :user="user" 
+              :loading="updateLoading" 
+              @submit="handleUpdateProfile"
+            />
+          </div>
 
-            <!-- Sidebar -->
-            <div class="space-y-6">
-              <!-- Account Info -->
-              <AccountInfo :user="user" />
-              
-              <!-- Security Options -->
-              <SecurityOptions 
-                @change-password="showChangePasswordModal = true"
-                @logout="logout"
-              />
-            </div>
-          </div>
-        </div>
-        
-        <!-- Status Dokumen PERTEK Tab Content -->
-        <div v-else-if="activeTab === 'status-pertek'" class="space-y-6">
-          <div class="p-8 bg-white rounded-lg shadow-sm border border-slate-200">
-            <h3 class="text-xl font-semibold mb-4">Status Dokumen PERTEK</h3>
-            <p class="text-slate-600">Fitur ini masih dalam pengembangan.</p>
-          </div>
-        </div>
-        
-        <!-- Status Dokumen SLO Tab Content -->
-        <div v-else-if="activeTab === 'status-slo'" class="space-y-6">
-          <div class="p-8 bg-white rounded-lg shadow-sm border border-slate-200">
-            <h3 class="text-xl font-semibold mb-4">Status Dokumen SLO</h3>
-            <p class="text-slate-600">Fitur ini masih dalam pengembangan.</p>
+          <!-- Sidebar -->
+          <div class="space-y-6">
+            <!-- Account Info -->
+            <AccountInfo :user="user" />
+            
+            <!-- Security Options -->
+            <SecurityOptions 
+              @change-password="showChangePasswordModal = true"
+              @logout="logout"
+            />
           </div>
         </div>
       </div>
@@ -141,18 +89,16 @@ import ProfileHeader from '~/components/profile/ProfileHeader.vue'
 import ProfileForm from '~/components/profile/ProfileForm.vue'
 import AccountInfo from '~/components/profile/AccountInfo.vue'
 import SecurityOptions from '~/components/profile/SecurityOptions.vue'
-import DocumentsTab from '~/components/profile/DocumentsTab.vue'
 import ChangePasswordModal from '~/components/profile/ChangePasswordModal.vue'
 import StatusMessage from '~/components/profile/StatusMessage.vue'
 
 useHead({
-  title: 'Akun - Aplikasi Status Dokumen PERTEK/SLO | Dinas Lingkungan Hidup Kabupaten Grobogan',
+  title: 'Profil Pengguna - Aplikasi Status Dokumen PERTEK/SLO | Dinas Lingkungan Hidup Kabupaten Grobogan',
   meta: [
-    { name: 'description', content: 'Halaman akun pengguna untuk mengelola profil, status dokumen PERTEK, dan status dokumen SLO.' },
+    { name: 'description', content: 'Halaman profil pengguna untuk mengelola informasi akun dan pengaturan keamanan.' },
     { name: 'robots', content: 'noindex, nofollow' }
   ]
 })
-
 
 const {
   user,
@@ -170,9 +116,6 @@ const {
   changePassword,
   logout
 } = useProfile()
-
-// Tab state (default to profil tab)
-const activeTab = ref('profil')
 
 // Update profile function
 const handleUpdateProfile = async (profileData) => {
@@ -199,13 +142,3 @@ onMounted(() => {
   fetchUserData()
 })
 </script>
-
-<style scoped>
-.scrollbar-hide {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Chrome, Safari and Opera */
-}
-</style>

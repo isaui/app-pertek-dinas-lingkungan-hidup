@@ -196,11 +196,11 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import Navbar from '~/components/navbar/index.vue';
-import StatusBadge from '~/components/slo/StatusBadge.vue';
+import StatusBadge from '~/components/slo/SLOStatusBadge.vue';
 
 // Import tab components
-import InformasiUmum from '~/components/user/slo/InformasiUmum.vue';
-import HistoryTab from '~/components/user/slo/HistoryTab.vue';
+import InformasiUmum from '~/components/user/slo/InformasiUmumTab.vue';
+import HistoryTab from '~/components/user/slo/SLOHistoryTab.vue';
 import DocumentTab from '~/components/user/slo/DocumentTab.vue';
 import FeedbackTab from '~/components/user/slo/FeedbackTab.vue';
 import RevisionTab from '~/components/user/slo/RevisionTab.vue';

@@ -180,7 +180,7 @@
   import { ref, computed, onMounted, watch } from 'vue';
   import { useRouter, useRoute } from 'vue-router';
   import Navbar from '~/components/navbar/index.vue';
-  import StatusBadge from '~/components/slo/StatusBadge.vue';
+  import StatusBadge from '~/components/slo/SLOStatusBadge.vue';
   
   // Import tab components
   import SLOInformasiUmum from '~/components/admin/slo/SLOInformasiUmum.vue';
