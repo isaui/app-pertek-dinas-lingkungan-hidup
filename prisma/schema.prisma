@@ -23,7 +23,8 @@ model User {
   
   accounts Account[]
   sessions Session[]
-  pertek   Pertek[] // Tambahkan relasi ke Pertek
+  pertek   Pertek[]
+  slo      SLO[] // Tambahkan relasi ke SLO
 }
 
 model Account {
@@ -87,6 +88,7 @@ model QueueItem {
   @@index([status, processAt]) // Index for efficient querying
 }
 
+// ===== PERTEK MODELS (existing) =====
 model Pertek {
   id                String        @id @default(cuid())
   pertekNumber      String?       // Nomor PERTEK (diisi setelah disetujui)
@@ -105,10 +107,10 @@ model Pertek {
   updatedAt         DateTime      @updatedAt
   
   // Relations
-  user              User          @relation(fields: [userId], references: [id]) // Tambahkan relasi ke User
+  user              User          @relation(fields: [userId], references: [id])
   documents         PertekDocument[]
   statusHistory     PertekStatusHistory[]
-  requirementFeedback PertekRequirementFeedback[] // Feedback untuk dokumen persyaratan
+  requirementFeedback PertekRequirementFeedback[]
   
   @@index([userId])
   @@index([type])
@@ -130,7 +132,7 @@ model PertekDocument {
   
   // Relations
   pertek         Pertek             @relation(fields: [pertekId], references: [id], onDelete: Cascade)
-  feedbacks      PertekRequirementFeedback[] // Feedback untuk dokumen ini
+  feedbacks      PertekRequirementFeedback[]
   
   @@index([pertekId])
   @@index([type])
@@ -146,12 +148,11 @@ model PertekStatusHistory {
   
   // Relations
   pertek         Pertek        @relation(fields: [pertekId], references: [id], onDelete: Cascade)
-  requirementFeedbacks PertekRequirementFeedback[] // Feedback yang dibuat saat status ini
+  requirementFeedbacks PertekRequirementFeedback[]
   
   @@index([pertekId])
 }
 
-// Model baru untuk feedback persyaratan
 model PertekRequirementFeedback {
   id                String        @id @default(cuid())
   pertekId          String        // PERTEK ID
@@ -173,13 +174,98 @@ model PertekRequirementFeedback {
   @@index([documentId])
 }
 
-// Enums yang dibutuhkan oleh model PERTEK
+// ===== SLO MODELS (new) =====
+model SLO {
+  id                String        @id @default(cuid())
+  sloNumber         String?       // Nomor SLO (diisi setelah disetujui)
+  userId            String        // User ID yang mengajukan SLO
+  type              SLOType       // Jenis SLO (EMISI/AIR_LIMBAH)
+  status            SLOStatus     @default(SUBMITTED)
+  company           String        // Nama perusahaan/instansi
+  address           String        // Alamat perusahaan
+  notes             String?       // Catatan tambahan dari pemohon
+  adminNotes        String?       // Catatan dari admin (internal)
+  feedbackToUser    String?       // Feedback untuk user (dapat dilihat user)
+  verifikasiDate    DateTime?     // Tanggal verifikasi lapangan (jika sudah dijadwalkan)
+  verifikasiLocation String?      // Lokasi verifikasi lapangan
+  approvedAt        DateTime?     // Tanggal SLO disetujui
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  // Relations
+  user              User          @relation(fields: [userId], references: [id])
+  documents         SLODocument[]
+  statusHistory     SLOStatusHistory[]
+  requirementFeedback SLORequirementFeedback[]
+  
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+}
+
+model SLODocument {
+  id             String             @id @default(cuid())
+  sloId          String             // SLO ID
+  type           SLODocumentType    // Jenis dokumen
+  expired        Boolean            @default(false)
+  filename       String             // Nama file asli
+  fileUrl        String             // URL file dari MinIO
+  size           Int                // Ukuran file (bytes)
+  mimeType       String             // MIME type file
+  uploadedAt     DateTime           @default(now())
+  updatedAt      DateTime           @default(now())
+  description    String?            // Deskripsi dokumen (opsional)
+  
+  // Relations
+  slo            SLO                @relation(fields: [sloId], references: [id], onDelete: Cascade)
+  feedbacks      SLORequirementFeedback[]
+  
+  @@index([sloId])
+  @@index([type])
+}
+
+model SLOStatusHistory {
+  id             String        @id @default(cuid())
+  sloId          String        // SLO ID
+  status         SLOStatus     // Status SLO
+  notes          String?       // Catatan perubahan status
+  changedById    String?       // User ID yang mengubah status (null jika sistem)
+  createdAt      DateTime      @default(now())
+  
+  // Relations
+  slo            SLO           @relation(fields: [sloId], references: [id], onDelete: Cascade)
+  requirementFeedbacks SLORequirementFeedback[]
+  
+  @@index([sloId])
+}
+
+model SLORequirementFeedback {
+  id                String        @id @default(cuid())
+  sloId             String        // SLO ID
+  statusHistoryId   String        // Status history yang terkait dengan feedback ini
+  documentId        String?       // Dokumen terkait (bisa null jika feedback umum)
+  requirementType   SLORequirementFeedbackType // Tipe persyaratan/dokumen
+  feedbackText      String        // Detail feedback/perbaikan yang diperlukan
+  isResolved        Boolean       @default(false) // Apakah sudah diperbaiki/resolved
+  resolvedAt        DateTime?     // Kapan feedback ini diselesaikan
+  createdAt         DateTime      @default(now())
+  
+  // Relations
+  slo               SLO           @relation(fields: [sloId], references: [id], onDelete: Cascade)
+  statusHistory     SLOStatusHistory @relation(fields: [statusHistoryId], references: [id], onDelete: Cascade)
+  document          SLODocument?  @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  
+  @@index([sloId])
+  @@index([statusHistoryId])
+  @@index([documentId])
+}
+
+// ===== PERTEK ENUMS (existing) =====
 enum PertekType {
   EMISI       // Pembuangan emisi
   AIR_LIMBAH  // Air limbah
 }
 
-// Status berdasarkan flow pada gambar
 enum PertekStatus {
   SUBMITTED                 // Baru diajukan
   VERIFICATION              // Proses verifikasi dokumen
@@ -202,11 +288,48 @@ enum PertekDocumentType {
   PERTEK_FINAL           // Dokumen PERTEK final yang sudah disetujui
 }
 
-// Tipe feedback persyaratan
 enum RequirementFeedbackType {
   SURAT_PERMOHONAN       // Surat permohonan PERTEK
   DOKUMEN_AMDAL_UKL_UPL  // Dokumen AMDAL/UKL-UPL
   DOKUMEN_TEKNIS         // Dokumen Standar/Kajian Teknis
   DOKUMEN_REVISI         // Dokumen revisi setelah paparan
   OTHER                  // Lainnya
+}
+
+// ===== SLO ENUMS (new) =====
+enum SLOType {
+  EMISI       // Pembuangan emisi
+  AIR_LIMBAH  // Air limbah
+}
+
+enum SLOStatus {
+  SUBMITTED                      // Baru diajukan
+  VERIFICATION                   // Proses verifikasi dokumen
+  INCOMPLETE_REQUIREMENTS        // Persyaratan tidak lengkap
+  COMPLETE_REQUIREMENTS          // Persyaratan lengkap
+  FIELD_VERIFICATION_SCHEDULED   // Verifikasi lapangan dijadwalkan
+  FIELD_VERIFICATION_COMPLETED   // Verifikasi lapangan selesai
+  REVISION_SUBMITTED             // Revisi telah disubmit
+  REVISION_REVIEW                // Pemeriksaan revisi
+  REVISION_REJECTED              // Revisi ditolak
+  REVISION_APPROVED              // Revisi diterima
+  SLO_ISSUED                     // SLO diterbitkan
+  REJECTED                       // Ditolak secara keseluruhan
+}
+
+enum SLODocumentType {
+  PERSYARATAN                // Dokumen persyaratan awal
+  REVISI                     // Dokumen revisi setelah verifikasi
+  SURAT_UNDANGAN_VERIFIKASI  // Surat undangan verifikasi lapangan
+  SLO_FINAL                  // Dokumen SLO final yang sudah disetujui
+}
+
+enum SLORequirementFeedbackType {
+  DOK_PERIZINAN_BERUSAHA     // Dokumen Perizinan Berusaha
+  PERSETUJUAN_LINGKUNGAN     // Persetujuan Lingkungan
+  PERSETUJUAN_TEKNIS         // Persetujuan Teknis
+  HASIL_PEMANTAUAN_EMISI     // Hasil Pemantauan Emisi
+  SERTIFIKAT_REGISTRASI_LAB  // Sertifikat Registrasi Laboratorium Penguji
+  DOKUMEN_REVISI             // Dokumen revisi setelah verifikasi
+  OTHER                      // Lainnya
 }
