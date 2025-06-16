@@ -201,7 +201,7 @@
   <script setup>
   import { ref, computed } from 'vue'
   import SLOStatusBadge from '~/components/slo/StatusBadge.vue'
-  import FileUploadField from '~/components/pertek/FileUploadField.vue'
+  import FileUploadField from '~/components/common/FileUploadField.vue'
   
   const props = defineProps({
     sloId: {

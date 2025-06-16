@@ -5,8 +5,8 @@
     <div class="max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <!-- Header -->
       <div class="mb-8">
-        <h1 class="text-3xl font-bold text-slate-800">Pengajuan PERTEK</h1>
-        <p class="mt-2 text-slate-600">Silakan lengkapi formulir pengajuan Persetujuan Teknis (PERTEK) di bawah ini.</p>
+        <h1 class="text-3xl font-bold text-slate-800">Pengajuan SLO</h1>
+        <p class="mt-2 text-slate-600">Silakan lengkapi formulir pengajuan Surat Layak Operasi (SLO) di bawah ini.</p>
       </div>
       
       <!-- Alert for error messages -->
@@ -40,19 +40,20 @@
       <!-- Form -->
       <form @submit.prevent="handleSubmit" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="p-6">
-          <!-- PERTEK Type Selector -->
-          <PertekTypeSelector v-model="formData.pertekType" />
+          <!-- SLO Type Selector -->
+          <SLOTypeSelector v-model="formData.sloType" />
           
           <!-- File Upload Fields -->
           <FileUploadField
             ref="fileUploadRef"
             id="persyaratan"
             label="Upload Persyaratan/Kelengkapan"
-            description="Silakan unggah dokumen persyaratan PERTEK sesuai dengan ketentuan di bawah ini."
+            description="Silakan unggah dokumen persyaratan SLO sesuai dengan ketentuan di bawah ini."
             :requirements="[
-              'Surat Permohonan PERTEK',
-              'Dokumen AMDAL/UKL-UPL',
-              'Dokumen Standar Teknis atau Dokumen Kajian Teknis'
+              'Surat Permohonan SLO',
+              'Dokumen Hasil Uji Emisi/Air Limbah',
+              'Bukti Kalibrasi Alat',
+              'Dokumen Teknis Instalasi Pengelolaan'
             ]"
             acceptedFormats="pdf/doc/docx/rar"
             accept=".pdf,.doc,.docx,.rar"
@@ -102,11 +103,26 @@
         
         <!-- Form Actions -->
         <div class="px-6 py-4 bg-slate-50 border-t border-slate-200">
-          <SubmitButton 
-            :loading="loading" 
-            :disabled="!canSubmit"
-            @click="handleSubmit"
-          />
+          <div class="flex items-center justify-end space-x-3">
+            <button 
+              type="button" 
+              @click="$router.back()" 
+              class="px-4 py-2 border border-slate-300 shadow-sm text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500"
+            >
+              Batal
+            </button>
+            <button 
+              type="submit" 
+              class="px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center space-x-2" 
+              :disabled="!canSubmit || loading"
+            >
+              <svg v-if="loading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {{ loading ? 'Memproses...' : 'Ajukan Permohonan' }}
+            </button>
+          </div>
         </div>
       </form>
       
@@ -119,16 +135,15 @@ import { ref, computed } from 'vue';
 import { useHead } from '#app';
 import { useRouter } from 'vue-router';
 import Navbar from '~/components/navbar/index.vue';
-import PertekTypeSelector from '~/components/pertek/PertekTypeSelector.vue';
+import SLOTypeSelector from '~/components/slo/SLOTypeSelector.vue';
 import FileUploadField from '~/components/common/FileUploadField.vue';
-import SubmitButton from '~/components/pertek/SubmitButton.vue';
 
 // SEO metadata
 useHead({
-  title: 'Ajukan Permohonan PERTEK | DLH Kabupaten Grobogan',
+  title: 'Ajukan Permohonan SLO | DLH Kabupaten Grobogan',
   meta: [
-    { name: 'description', content: 'Form pengajuan Persetujuan Teknis (PERTEK) pembuangan emisi dan air limbah di Dinas Lingkungan Hidup Kabupaten Grobogan.' },
-    { name: 'keywords', content: 'pertek, pembuangan emisi, air limbah, dinas lingkungan hidup, grobogan, persetujuan teknis, formulir' }
+    { name: 'description', content: 'Form pengajuan Surat Layak Operasi (SLO) pembuangan emisi dan air limbah di Dinas Lingkungan Hidup Kabupaten Grobogan.' },
+    { name: 'keywords', content: 'slo, surat layak operasi, pembuangan emisi, air limbah, dinas lingkungan hidup, grobogan' }
   ]
 });
 
@@ -140,7 +155,7 @@ const fileUploadRef = ref(null);
 const uploadedFiles = ref([]);
 
 const formData = ref({
-  pertekType: 'emisi',
+  sloType: 'emisi',
   company: '',
   address: '',
   persyaratanFiles: [],
@@ -151,7 +166,7 @@ const formData = ref({
 const canSubmit = computed(() => {
   return formData.value.company && 
          formData.value.address && 
-         formData.value.persyaratanFiles.length > 0; // Check selected files, not uploaded files
+         formData.value.persyaratanFiles.length > 0;
 });
 
 // Handle uploaded files from FileUploadField
@@ -221,17 +236,17 @@ const handleSubmit = async () => {
       }
     }
     
-    // Step 2: Submit PERTEK data with uploaded files
-    // Map pertekType value to API expected format
-    let pertekType = formData.value.pertekType;
-    if (pertekType === 'limbah') {
-      pertekType = 'AIR_LIMBAH';
+    // Step 2: Submit SLO data with uploaded files
+    // Map sloType value to API expected format
+    let sloType = formData.value.sloType;
+    if (sloType === 'limbah') {
+      sloType = 'AIR_LIMBAH';
     } else {
-      pertekType = pertekType.toUpperCase();
+      sloType = sloType.toUpperCase();
     }
     
-    const pertekData = {
-      type: pertekType,
+    const sloData = {
+      type: sloType,
       company: formData.value.company,
       address: formData.value.address,
       notes: formData.value.notes || '',
@@ -239,21 +254,21 @@ const handleSubmit = async () => {
     };
     
     // Submit to API
-    const response = await $fetch('/api/pertek/submit', {
+    const response = await $fetch('/api/slo/submit', {
       method: 'POST',
-      body: pertekData
+      body: sloData
     });
     
     // Show success and redirect
-    successMessage.value = 'Permohonan PERTEK berhasil diajukan!';
+    successMessage.value = 'Permohonan SLO berhasil diajukan!';
     
-    // Redirect to PERTEK dashboard with success message after 2 seconds
+    // Redirect to SLO dashboard with success message after 2 seconds
     setTimeout(() => {
       router.push({
-        path: '/pertek',
+        path: '/slo',
         query: { 
           success: 'true', 
-          message: 'Permohonan PERTEK berhasil diajukan!' 
+          message: 'Permohonan SLO berhasil diajukan!' 
         }
       });
     }, 2000);
