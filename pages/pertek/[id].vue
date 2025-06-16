@@ -343,6 +343,9 @@
       case 'view-documents':
         setActiveTab('documents');
         break;
+      case 'update-requirements':
+        setActiveTab('requirements');
+        break;
       default:
         console.log('Quick action:', action);
     }

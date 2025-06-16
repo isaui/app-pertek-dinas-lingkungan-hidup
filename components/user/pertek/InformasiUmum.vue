@@ -2,39 +2,48 @@
     <div class="space-y-6">
       <!-- Quick Actions & Status Banner -->
       <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div class="flex items-center space-x-4">
-            <div class="flex-shrink-0">
-              <StatusBadge :status="pertek.status" class="text-sm" />
-            </div>
-            <div>
+        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+          <div>
+            <div class="flex items-center space-x-3 mb-3">
+              <div class="flex-shrink-0">
+                <StatusBadge :status="pertek.status" class="text-sm" />
+              </div>
               <h3 class="text-lg font-semibold text-slate-900">{{ getStatusTitle(pertek.status) }}</h3>
-              <p class="text-sm text-slate-600 mt-1">{{ getStatusDescription(pertek.status) }}</p>
+            </div>
+            <p class="text-sm text-slate-600">{{ getStatusDescription(pertek.status) }}</p>
+            
+            <!-- Feedback Notice (if applicable) -->
+            <div v-if="feedbackCount > 0" class="flex items-center space-x-2 mt-4 text-amber-700">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span class="text-sm font-medium">{{ feedbackCount }} feedback menunggu</span>
             </div>
           </div>
           
-          <!-- Quick Actions -->
-          <div class="flex flex-col sm:flex-row gap-3">
-            <div v-if="feedbackCount > 0" class="flex items-center space-x-2 px-3 py-2 bg-amber-100 border border-amber-300 rounded-md">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <span class="text-sm font-medium text-amber-700">{{ feedbackCount }} feedback menunggu</span>
-            </div>
+          <!-- Quick Actions Section - Match design in screenshot -->
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-if="shouldShowUpdateRequirementsButton"
+              @click="handleQuickAction({key: 'update-requirements'})"
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              Update Persyaratan
+            </button>
             
             <button
-              v-for="action in quickActions"
-              :key="action.key"
-              @click="handleQuickAction(action)"
-              :class="[
-                'inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2',
-                action.primary 
-                  ? 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500' 
-                  : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 focus:ring-slate-500'
-              ]"
+              v-if="feedbackCount > 0"
+              @click="handleQuickAction({key: 'view-feedback'})"
+              class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              <component :is="action.icon" class="h-4 w-4 mr-2" />
-              {{ action.label }}
+              Lihat Feedback
+            </button>
+            
+            <button
+              @click="handleQuickAction({key: 'view-documents'})"
+              class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              Lihat Dokumen
             </button>
           </div>
         </div>
@@ -213,12 +222,21 @@
     
     switch (props.pertek.status) {
       case 'INCOMPLETE_REQUIREMENTS':
+        // Quick action to update requirements
+        actions.push({
+          key: 'update-requirements',
+          label: 'Update Persyaratan',
+          icon: 'svg',
+          primary: true
+        });
+        
+        // Feedback action if there are active feedbacks
         if (activeFeedback.value.length > 0) {
           actions.push({
             key: 'view-feedback',
             label: 'Lihat Feedback',
-            icon: 'svg', // We'll use inline SVG
-            primary: true
+            icon: 'svg',
+            primary: false
           });
         }
         break;
@@ -268,6 +286,11 @@
   });
   
   const feedbackCount = computed(() => activeFeedback.value.length);
+
+  // Control visibility of Update Persyaratan button
+  const shouldShowUpdateRequirementsButton = computed(() => {
+    return ['INCOMPLETE_REQUIREMENTS', 'REJECTED'].includes(props.pertek.status);
+  });
   
   // Document types untuk ringkasan
   const documentTypes = [
@@ -437,6 +460,7 @@
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
