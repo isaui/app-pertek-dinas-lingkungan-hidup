@@ -211,7 +211,7 @@
   import PertekCard from '~/components/pertek/PertekCard.vue';
   import PertekTable from '~/components/pertek/PertekTable.vue';
   import PertekControls from '~/components/pertek/PertekControls.vue';
-  import Pagination from '~/components/pertek/Pagination.vue';
+  import Pagination from '~/components/common/Pagination.vue';
   
   // SEO metadata
   useHead({
