@@ -1,0 +1,45 @@
+name: Deploy to Kubernetes
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate short SHA
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Trigger deployment
+        env:
+          SECRETS: ${{ secrets.SECRETS }}
+          REPO_URL: ${{ github.repository }}
+          COMMIT_SHA: ${{ steps.vars.outputs.sha_short }}
+        run: |
+          # Prepare the deployment payload without logging sensitive data
+          IMAGE_ID="localhost:5000/dlh-pertek:${COMMIT_SHA}"
+          echo "Preparing deployment for commit: ${COMMIT_SHA}"
+          echo "Image identifier: ${IMAGE_ID}"
+          
+          # Combine GitHubUrl, IMAGE_REGISTRY, and the SECRETS without logging
+          jq -n --arg url "https://github.com/${REPO_URL}" \
+             --arg img "${IMAGE_ID}" \
+             --argjson secrets "${SECRETS}" \
+             '{"githubUrl": $url, "env": ($secrets + {"IMAGE_REGISTRY": $img})}' > payload.json
+          
+          # Send the deployment request
+          echo "Sending deployment request to API..."
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-API-Key: ${{ secrets.API_KEY }}" \
+            -d @payload.json \
+            "https://api.millab-kubernetes.isacitra.com/create-deployment"
+            
+          # Clean up temporary files with sensitive data
+          rm -f payload.json
