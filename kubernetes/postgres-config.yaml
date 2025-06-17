@@ -8,7 +8,6 @@ data:
   POSTGRES_USER: "postgres"
   POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
   POSTGRES_HOST_AUTH_METHOD: "md5"
-  # Sample initialization script - uncomment if needed
-  # init.sql: |
-  #   CREATE DATABASE dlhdb;
-  #   GRANT ALL PRIVILEGES ON DATABASE dlhdb TO postgres;
+  init.sql: |
+    CREATE DATABASE dlhdb;
+    GRANT ALL PRIVILEGES ON DATABASE dlhdb TO postgres;
