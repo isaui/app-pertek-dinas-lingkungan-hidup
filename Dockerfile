@@ -49,16 +49,12 @@ ENV DATABASE_URL=${DATABASE_URL}
 
 # Set environment variables for Prisma
 ENV NODE_ENV=production
-ENV PRISMA_CLIENT_ENGINE_TYPE=binary
 
-# Add .npmrc to configure Prisma to use binary engine type
-RUN echo 'node-linker=hoisted\npublicHoist[]=*prisma*\npublicHoist[]=*@prisma/client*\nlegacy-peer-deps=true' > .npmrc
-
-# Generate Prisma client with binary engine type for production
+# Generate Prisma client with explicit binary engine type
 RUN npx prisma generate
 
-# Build the application with special handling for Prisma
-RUN PRISMA_CLIENT_ENGINE_TYPE=binary NODE_OPTIONS="--max-old-space-size=4096" npm run build
+# Build the application with workaround for Prisma+Nuxt issue
+RUN npm run build
 
 # Production image
 FROM node:20-alpine AS production
