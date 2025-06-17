@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: minio-console-ingress
+  namespace: dlh
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    kubernetes.io/ingress.class: "traefik"
+    traefik.ingress.kubernetes.io/router.middlewares: dlh-redirect-https@kubernetescrd
+spec:
+  tls:
+    - hosts:
+        - minio.dlh-pertek.isacitra.com
+      secretName: minio-tls-secret
+  rules:
+    - host: minio.dlh-pertek.isacitra.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: minio
+                port:
+                  number: 9001
