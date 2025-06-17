@@ -59,6 +59,13 @@ export default defineEventHandler(async (event) => {
           where: {
             type: 'REVISI'
           }
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
         }
       }
     })
@@ -114,7 +121,7 @@ export default defineEventHandler(async (event) => {
       }
       
       // Update PERTEK status if needed
-      if (pertek.status === 'PAPARAN_COMPLETED') {
+      if (pertek.status === 'PAPARAN_COMPLETED' || pertek.status === 'REVISION_REJECTED') {
         await tx.pertek.update({
           where: { id: pertekId },
           data: {
@@ -132,6 +139,28 @@ export default defineEventHandler(async (event) => {
             changedById: session.user.id
           }
         })
+      }
+
+      if (pertek.user?.email) {
+        try {
+          // Queue email notification to be sent asynchronously
+          await dbEmailQueue.add('status-update-notification', {
+            to: pertek.user.email,
+            name: pertek.user.name || 'User',
+            companyName: pertek.company, // Company name from PERTEK model
+            pertekNumber: pertek.pertekNumber || pertek.id, // Use PERTEK number if available, fallback to ID
+            newStatus: 'REVISION_SUBMITTED',
+            statusLabel: getStatusLabel('REVISION_SUBMITTED'),
+            notes: 'User mengupload dokumen revisi'
+          }, {
+            maxAttempts: 3,
+            delaySeconds: 1 // Small delay to ensure transaction is fully committed
+          })
+          console.log(`[PERTEK Status] Email notification queued for ${pertek.user.email}`)
+        } catch (emailError) {
+          // Log error but don't fail the request
+          console.error('Error queueing status notification email:', emailError)
+        }
       }
       
       return uploadedDocuments
@@ -158,3 +187,22 @@ export default defineEventHandler(async (event) => {
     })
   }
 })
+
+function getStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    'SUBMITTED': 'Diajukan',
+    'VERIFICATION': 'Verifikasi',
+    'INCOMPLETE_REQUIREMENTS': 'Persyaratan Tidak Lengkap',
+    'COMPLETE_REQUIREMENTS': 'Persyaratan Lengkap',
+    'SCHEDULED_PAPARAN': 'Paparan Dijadwalkan',
+    'PAPARAN_COMPLETED': 'Paparan Selesai',
+    'REVISION_SUBMITTED': 'Revisi Diajukan',
+    'REVISION_REVIEW': 'Review Revisi',
+    'REVISION_REJECTED': 'Revisi Ditolak',
+    'REVISION_APPROVED': 'Revisi Disetujui',
+    'PERTEK_ISSUED': 'PERTEK Diterbitkan',
+    'REJECTED': 'Ditolak'
+  }
+  
+  return labels[status] || status
+}

@@ -212,10 +212,6 @@
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h4 class="text-sm font-medium text-blue-900 mb-3">Tindakan Cepat</h4>
           <div class="flex flex-wrap gap-2">
-            <button @click="$emit('documents-updated')"
-                    class="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
-              Refresh Dokumen
-            </button>
             <button @click="downloadAllDocuments"
                     v-if="documents.length > 0"
                     class="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700">

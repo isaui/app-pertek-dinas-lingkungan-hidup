@@ -355,7 +355,7 @@ const setActiveTab = (tabId) => {
 
 // Navigation helpers
 const navigateToList = () => {
-  router.push('/dashboard');
+  router.push('/slo');
 };
 
 // Event handlers

@@ -57,6 +57,13 @@ export default defineEventHandler(async (event) => {
           where: {
             type: 'PERSYARATAN'
           }
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
         }
       }
     })
@@ -116,7 +123,7 @@ export default defineEventHandler(async (event) => {
         await tx.sLO.update({
           where: { id: sloId },
           data: {
-            status: 'VERIFICATION',
+            status: 'SUBMITTED',
             updatedAt: new Date()
           }
         })
@@ -125,13 +132,36 @@ export default defineEventHandler(async (event) => {
         await tx.sLOStatusHistory.create({
           data: {
             sloId: sloId,
-            status: 'VERIFICATION',
+            status: 'SUBMITTED',
             notes: replaceExisting 
               ? 'User memperbarui semua dokumen persyaratan'
               : 'User menambahkan dokumen persyaratan tambahan',
             changedById: session.user.id
           }
         })
+
+        if(slo.user?.email) {
+          try {
+            // Queue email notification to be sent asynchronously
+            await dbEmailQueue.add('status-update-notification', {
+              to: slo.user.email,
+              name: slo.user.name || 'User',
+              companyName: slo.company, // Company name from PERTEK model
+              sloNumber: slo.sloNumber || slo.id, // Use PERTEK number if available, fallback to ID
+              newStatus: 'SUBMITTED',
+              statusLabel:  getStatusLabel('SUBMITTED'),
+              notes: 'User memperbarui semua dokumen persyaratan'
+            }, {
+              maxAttempts: 3,
+              delaySeconds: 1 // Small delay to ensure transaction is fully committed
+            })
+            console.log(`[SLO Status] Email notification queued for ${slo.user.email}`)
+          } catch (emailError) {
+            // Log error but don't fail the request
+            console.error('Error queueing status notification email:', emailError)
+          }
+        }
+        
       }
       
       return uploadedDocuments
@@ -158,3 +188,22 @@ export default defineEventHandler(async (event) => {
     })
   }
 })
+
+function getStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    'SUBMITTED': 'Diajukan',
+    'VERIFICATION': 'Verifikasi',
+    'INCOMPLETE_REQUIREMENTS': 'Persyaratan Tidak Lengkap',
+    'COMPLETE_REQUIREMENTS': 'Persyaratan Lengkap',
+    'FIELD_VERIFICATION_SCHEDULED': 'Verifikasi Lapangan Dijadwalkan',
+    'FIELD_VERIFICATION_COMPLETED': 'Verifikasi Lapangan Selesai',
+    'REVISION_SUBMITTED': 'Revisi Diajukan',
+    'REVISION_REVIEW': 'Review Revisi',
+    'REVISION_REJECTED': 'Revisi Ditolak',
+    'REVISION_APPROVED': 'Revisi Disetujui',
+    'SLO_ISSUED': 'SLO Diterbitkan',
+    'REJECTED': 'Ditolak'
+  }
+  
+  return labels[status] || status
+}
