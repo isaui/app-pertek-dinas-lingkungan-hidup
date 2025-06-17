@@ -10,3 +10,4 @@ export interface User {
   emailVerified: boolean | string | null
   role: string
 }
+//
