@@ -66,6 +66,7 @@ COPY --from=builder /app/.nuxt ./.nuxt
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/nuxt.config.ts ./
+COPY --from=builder /app/prisma ./prisma
 
 # Expose the port
 EXPOSE 3000
