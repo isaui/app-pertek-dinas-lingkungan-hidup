@@ -21,9 +21,9 @@ spec:
         image: minio/minio:latest
         env:
         - name: MINIO_ROOT_USER
-          value: "${MINIO_ACCESS_KEY}"
+          value: ${MINIO_ACCESS_KEY}
         - name: MINIO_ROOT_PASSWORD
-          value: "${MINIO_SECRET_KEY}"
+          value: ${MINIO_SECRET_KEY}
         - name: MINIO_BROWSER_REDIRECT_URL
           value: "https://minio.dlh-pertek.isacitra.com"
         - name: MINIO_SERVER_URL
