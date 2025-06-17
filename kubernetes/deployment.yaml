@@ -13,6 +13,13 @@ spec:
       labels:
         app: dlh-app
     spec:
+      initContainers:
+      - name: db-migrate
+        image: ${IMAGE_REGISTRY}
+        command: ["npx", "prisma", "migrate", "deploy"]
+        env:
+        - name: DATABASE_URL
+          value: "${DATABASE_URL}"
       containers:
         - name: dlh-app
           image: ${IMAGE_REGISTRY}
