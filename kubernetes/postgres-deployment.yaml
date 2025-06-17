@@ -6,6 +6,8 @@ metadata:
 spec:
   serviceName: postgres
   replicas: 1
+  updateStrategy:
+    type: RollingUpdate
   selector:
     matchLabels:
       app: postgres
