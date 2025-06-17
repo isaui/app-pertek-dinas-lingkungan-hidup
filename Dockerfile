@@ -50,6 +50,8 @@ ENV DATABASE_URL=${DATABASE_URL}
 # Set environment variables for Prisma
 ENV NODE_ENV=production
 
+RUN npx prisma migrate deploy
+
 # Generate Prisma client with explicit binary engine type
 RUN npx prisma generate
 

@@ -22,39 +22,39 @@ spec:
               name: http
           env:
             - name: EMAIL_SMTP_HOST
-              value: ${EMAIL_SMTP_HOST}
+              value: "${EMAIL_SMTP_HOST}"
             - name: EMAIL_SMTP_PORT
               value: "${EMAIL_SMTP_PORT}"
             - name: EMAIL_SMTP_SECURE
               value: "${EMAIL_SMTP_SECURE}"
             - name: EMAIL_SMTP_USER
-              value: ${EMAIL_SMTP_USER}
+              value: "${EMAIL_SMTP_USER}"
             - name: EMAIL_SMTP_PASSWORD
-              value: ${EMAIL_SMTP_PASSWORD}
+              value: "${EMAIL_SMTP_PASSWORD}"
             - name: EMAIL_SMTP_REJECT_UNAUTHORIZED
               value: "${EMAIL_SMTP_REJECT_UNAUTHORIZED}"
             - name: EMAIL_FROM
-              value: ${EMAIL_FROM}
+              value: "${EMAIL_FROM}"
             - name: BETTER_AUTH_SECRET
-              value: ${BETTER_AUTH_SECRET}
+              value: "${BETTER_AUTH_SECRET}"
             - name: BETTER_AUTH_URL
-              value: ${BETTER_AUTH_URL}
+              value: "${BETTER_AUTH_URL}"
             - name: FRONTEND_URL
-              value: ${FRONTEND_URL}
+              value: "${FRONTEND_URL}"
             - name: MINIO_ENDPOINT
-              value: ${MINIO_ENDPOINT}
+              value: "${MINIO_ENDPOINT}"
             - name: MINIO_PORT
               value: "${MINIO_PORT}"
             - name: MINIO_USE_SSL
               value: "${MINIO_USE_SSL}"
             - name: MINIO_ACCESS_KEY
-              value: ${MINIO_ACCESS_KEY}
+              value: "${MINIO_ACCESS_KEY}"
             - name: MINIO_SECRET_KEY
-              value: ${MINIO_SECRET_KEY}
+              value: "${MINIO_SECRET_KEY}"
             - name: MINIO_BUCKET_NAME
-              value: ${MINIO_BUCKET_NAME}
+              value: "${MINIO_BUCKET_NAME}"
             - name: DATABASE_URL
-              value: ${DATABASE_URL}
+              value: "${DATABASE_URL}"
           resources:
             requests:
               cpu: 100m
