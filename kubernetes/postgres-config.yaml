@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: postgres-config
-  namespace: dlh
+
 data:
   POSTGRES_DB: "dlhdb"
   POSTGRES_USER: "postgres"
